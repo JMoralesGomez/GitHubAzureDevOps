@@ -3,30 +3,44 @@
 # Add steps that publish symbols, save build artifacts, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/apps/windows/dot-net
 
+
+#El pipeline se ejecuta automáticamente cada vez que hay un cambio (commit o merge) en la rama main.
 trigger:
 - main
 
+#Usa un agente hospedado por Microsoft con imagen de Windows más reciente para ejecutar los pasos del pipeline.
 pool:
   vmImage: 'windows-latest'
 
+#Define variables reutilizables:
+#solution: busca cualquier archivo .sln en el repositorio.
+#buildPlatform: se compilará para "Any CPU".
+#buildConfiguration: se usará la configuración Release.
 variables:
   solution: '**/*.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
 
+
+#Asegura que NuGet esté disponible para restaurar paquetes.
+#NuGet es un gestor de paquetes diseñado para permitir a los desarrolladores compartir código reutilizable. 
+#Es una solución de software como servicio cuya aplicación cliente es gratuita y de código abierto.
 steps:
 - task: NuGetToolInstaller@1
 
+#Restaura las dependencias definidas en el archivo .sln.
 - task: NuGetCommand@2
   inputs:
     restoreSolution: '$(solution)'
 
+#Compila el proyecto usando Visual Studio con la configuración Release.
 - task: VSBuild@1
   inputs:
     solution: '$(solution)'
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
 
+#Ejecuta pruebas automatizadas con el framework de pruebas de Visual Studio (como MSTest o NUnit si están configurados).
 - task: VSTest@2
   inputs:
     platform: '$(buildPlatform)'
