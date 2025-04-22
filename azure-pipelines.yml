@@ -45,3 +45,23 @@ steps:
   inputs:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
+# Descarga y ejecuta CodeQL para análisis de seguridad
+- powershell: |
+    Write-Host "=== Descargando CodeQL CLI ==="
+    Invoke-WebRequest -Uri "https://github.com/github/codeql-cli-binaries/releases/download/v2.13.4/codeql-win64.zip" -OutFile "codeql.zip"
+    Expand-Archive -Path "codeql.zip" -DestinationPath "./codeql"
+    $env:PATH += ";$(Resolve-Path ./codeql/codeql)";
+
+    Write-Host "=== Creando base de datos de CodeQL ==="
+    ./codeql/codeql/codeql.exe database create codeql-db --language=cpp --command="msbuild $(solution)"
+
+    Write-Host "=== Ejecutando análisis CodeQL ==="
+    ./codeql/codeql/codeql.exe database analyze codeql-db cpp-code-scanning.qls --format=sarifv2.1.0 --output=results.sarif
+  displayName: 'Run CodeQL Security Analysis'
+
+# Publica reporte como artefacto
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: 'results.sarif'
+    ArtifactName: 'CodeQL-Security-Report'
+    publishLocation: 'Container'
